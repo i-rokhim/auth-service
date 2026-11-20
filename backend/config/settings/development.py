@@ -1,10 +1,12 @@
 import os
 
-from .base import *
+from dotenv import load_dotenv
 
-DEBUG = True
+from .base import *
+from .base import BASE_DIR
+
+load_dotenv(BASE_DIR / '.env')
+
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-SECRET_KEY = os.environ.get(
-    'DJANGO_SECRET_KEY',
-    'dev-only-insecure-key-diganti-di-T0.5',
-)
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
