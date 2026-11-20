@@ -1,0 +1,1 @@
+# Model User didaftarkan ke admin site nanti, saat dibutuhkan.
