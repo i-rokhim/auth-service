@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masuk</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main>
+    <h1>Masuk</h1>
+    <p id="notice" role="status"></p>
+
+    <form id="login-form">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="username"
+             placeholder="nama@contoh.com" required>
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password"
+             autocomplete="current-password" required>
+
+      <p id="form-error" role="alert"></p>
+      <button type="submit">Masuk</button>
+    </form>
+
+    <p><a href="forgot-password.html">Lupa password?</a></p>
+    <p>Belum punya akun? <a href="register.html">Daftar</a></p>
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    // Yang sudah login langsung diarahkan ke profil.
+    Auth.redirectIfLoggedIn();
+
+    const form = document.getElementById('login-form');
+    const formError = document.getElementById('form-error');
+    const notice = document.getElementById('notice');
+    const button = form.querySelector('button');
+
+    // Pesan dari halaman Daftar.
+    if (new URLSearchParams(window.location.search).get('registered')) {
+      notice.textContent = 'Akun berhasil dibuat. Silakan masuk.';
+    }
+
+    function firstMessage(data) {
+      if (data && data.detail) {
+        return data.detail;
+      }
+      const messages = data ? Object.values(data).flat() : [];
+      return messages.length ? String(messages[0]) : 'Terjadi kesalahan. Coba lagi.';
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      formError.textContent = '';
+      button.disabled = true;
+
+      const result = await Api.request('/auth/login/', {
+        method: 'POST',
+        body: {
+          email: form.elements.email.value,
+          password: form.elements.password.value,
+        },
+        auth: false,
+      });
+
+      if (result.ok) {
+        Auth.saveSession(result.data);
+        Auth.redirectToHome();
+        return;
+      }
+
+      formError.textContent = firstMessage(result.data);
+      button.disabled = false;
+    });
+  </script>
+</body>
+</html>

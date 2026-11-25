@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daftar akun</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main>
+    <h1>Daftar akun</h1>
+
+    <form id="register-form">
+      <label for="name">Nama</label>
+      <input id="name" name="name" type="text" autocomplete="name"
+             maxlength="150" required>
+      <p id="error-name" class="field-error"></p>
+
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="username"
+             placeholder="nama@contoh.com" required>
+      <p id="error-email" class="field-error"></p>
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password"
+             autocomplete="new-password" required>
+      <p class="hint">Minimal 8 karakter, tidak terlalu umum, tidak hanya angka,
+        dan tidak mirip dengan email.</p>
+      <p id="error-password" class="field-error"></p>
+
+      <p id="form-error" role="alert"></p>
+      <button type="submit">Daftar</button>
+    </form>
+
+    <p>Sudah punya akun? <a href="index.html">Masuk</a></p>
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    // Yang sudah login langsung diarahkan ke profil.
+    Auth.redirectIfLoggedIn();
+
+    const form = document.getElementById('register-form');
+    const formError = document.getElementById('form-error');
+    const button = form.querySelector('button');
+    const fields = ['name', 'email', 'password'];
+
+    function clearErrors() {
+      formError.textContent = '';
+      fields.forEach((field) => {
+        document.getElementById(`error-${field}`).textContent = '';
+      });
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearErrors();
+      button.disabled = true;
+
+      const result = await Api.request('/auth/register/', {
+        method: 'POST',
+        body: {
+          name: form.elements.name.value,
+          email: form.elements.email.value,
+          password: form.elements.password.value,
+        },
+        auth: false,
+      });
+
+      if (result.ok) {
+        window.location.replace('index.html?registered=1');
+        return;
+      }
+
+      // 400: pesan ditampilkan di bawah field yang salah. Selain itu (misalnya
+      // 429 atau gangguan jaringan), pesan ditampilkan di atas tombol.
+      const data = result.data || {};
+      let shownUnderField = false;
+      fields.forEach((field) => {
+        if (Array.isArray(data[field])) {
+          document.getElementById(`error-${field}`).textContent = data[field].join(' ');
+          shownUnderField = true;
+        }
+      });
+      if (!shownUnderField) {
+        formError.textContent = data.detail || 'Terjadi kesalahan. Coba lagi.';
+      }
+      button.disabled = false;
+    });
+  </script>
+</body>
+</html>
