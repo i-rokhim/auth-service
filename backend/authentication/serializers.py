@@ -1,7 +1,9 @@
 from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User
 from users.serializers import UserSerializer
@@ -36,3 +38,23 @@ class LoginSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         data['user'] = UserSerializer(self.user).data
         return data
+
+
+class LogoutSerializer(serializers.Serializer):
+    """Mencabut refresh token milik user yang sedang login."""
+
+    refresh = serializers.CharField()
+
+    def validate(self, attrs):
+        message = {'refresh': ['Token tidak valid atau sudah dicabut.']}
+        try:
+            token = RefreshToken(attrs['refresh'])
+        except TokenError as error:
+            raise serializers.ValidationError(message) from error
+        if str(token['user_id']) != str(self.context['request'].user.pk):
+            raise serializers.ValidationError(message)
+        self.token = token
+        return attrs
+
+    def save(self, **kwargs):
+        self.token.blacklist()
