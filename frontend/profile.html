@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Profil saya</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main>
+    <h1>Profil saya</h1>
+
+    <dl>
+      <dt>Email</dt>
+      <dd id="user-email"></dd>
+      <dt>Role</dt>
+      <dd id="user-role"></dd>
+      <dt>Nama</dt>
+      <dd id="user-name"></dd>
+    </dl>
+
+    <button type="button" id="logout-button">Keluar</button>
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    // Halaman sementara: data diambil dari respons login yang tersimpan di
+    // browser. Nanti diganti dengan GET /auth/profile/ (Sprint 3).
+    if (Auth.requireLogin()) {
+      const user = Auth.getUser();
+      if (!user) {
+        // Data sesi rusak atau hilang: mulai ulang dari halaman Masuk.
+        Auth.clear();
+        Auth.redirectToLogin();
+      } else {
+        document.getElementById('user-email').textContent = user.email;
+        document.getElementById('user-role').textContent = user.role;
+        document.getElementById('user-name').textContent = user.name;
+      }
+    }
+
+    document.getElementById('logout-button').addEventListener('click', async (event) => {
+      event.target.disabled = true;
+      // Cabut refresh token di server, lalu hapus sesi di browser. Sesi di
+      // browser tetap dihapus walau permintaan gagal, supaya pengguna benar-benar
+      // keluar dari sisi frontend.
+      await Api.request('/auth/logout/', {
+        method: 'POST',
+        body: { refresh: Auth.getRefresh() },
+      });
+      Auth.clear();
+      Auth.redirectToLogin();
+    });
+  </script>
+</body>
+</html>
