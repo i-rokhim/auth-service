@@ -1,1 +1,160 @@
-/* Tampilan dikerjakan di akhir Sprint 2, setelah semua halaman berfungsi. */
+/* Tampilan sederhana untuk semua halaman. Satu file, tanpa framework. */
+
+:root {
+  --bg: #f3f4f6;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #4b5563;
+  --border: #d1d5db;
+  --accent: #1d4ed8;
+  --accent-dark: #1e40af;
+  --error: #b00020;
+  --success: #146c2e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+main {
+  max-width: 26rem;
+  margin: 2.5rem auto;
+  padding: 2rem 1.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+main p {
+  margin: 0.75rem 0 0;
+}
+
+h1 {
+  margin: 0 0 1.25rem;
+  font-size: 1.5rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* Formulir */
+
+label {
+  display: block;
+  margin-top: 1rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+input {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: inherit;
+  font: inherit;
+}
+
+button {
+  min-height: 2.75rem;
+  padding: 0.65rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent-dark);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+form button {
+  width: 100%;
+  margin-top: 1.25rem;
+}
+
+input:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Pesan. Kosong berarti tidak memakai ruang. */
+
+.field-error,
+#form-error {
+  margin: 0.35rem 0 0;
+  color: var(--error);
+  font-size: 0.9rem;
+}
+
+#form-error {
+  margin-top: 1rem;
+}
+
+#notice {
+  margin: 0 0 1rem;
+  color: var(--success);
+}
+
+.hint {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.field-error:empty,
+#form-error:empty,
+#notice:empty {
+  margin: 0;
+}
+
+/* Halaman profil */
+
+dl {
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0 0 1.5rem;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Layar sempit: kartu memenuhi lebar layar. */
+
+@media (max-width: 30rem) {
+  main {
+    margin: 0;
+    border-width: 1px 0;
+    border-radius: 0;
+  }
+}
