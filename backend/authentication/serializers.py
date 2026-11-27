@@ -60,3 +60,38 @@ class LogoutSerializer(serializers.Serializer):
 
     def save(self, **kwargs):
         self.token.blacklist()
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """Ganti password user yang sedang login (T3.2, US-06)."""
+
+    old_password = serializers.CharField(
+        write_only=True,
+        style={"input_type": "password"},
+    )
+    new_password = serializers.CharField(
+        write_only=True,
+        style={"input_type": "password"},
+    )
+
+    def validate_old_password(self, value):
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Wrong password.")
+        return value
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        try:
+            password_validation.validate_password(attrs["new_password"], user)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError(
+                {"new_password": list(error.messages)}
+            ) from error
+        return attrs
+
+    def save(self, **kwargs):
+        user = self.context["request"].user
+        user.set_password(self.validated_data["new_password"])
+        user.save(update_fields=["password"])
+        return user
