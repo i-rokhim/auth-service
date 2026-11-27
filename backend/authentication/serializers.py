@@ -1,6 +1,11 @@
+from django.conf import settings
 from django.contrib.auth import password_validation
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.mail import send_mail
 from django.db import transaction
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from rest_framework import serializers
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -18,6 +23,22 @@ def revoke_all_refresh_tokens(user):
     """Mencabut semua refresh token milik user (keputusan 3.5)."""
     for token in OutstandingToken.objects.filter(user=user):
         BlacklistedToken.objects.get_or_create(token=token)
+
+
+def send_reset_email(user):
+    """Mengirim email berisi tautan reset password (uid dan token)."""
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    link = f"{settings.FRONTEND_URL}/reset-password.html?uid={uid}&token={token}"
+    send_mail(
+        "Atur ulang password Auth Service",
+        f"Halo {user.name},\n\n"
+        "Kami menerima permintaan untuk mengatur ulang password akun Anda. "
+        f"Buka tautan berikut dalam 1 jam:\n\n{link}\n\n"
+        "Jika Anda tidak memintanya, abaikan email ini.",
+        None,
+        [user.email],
+    )
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -108,3 +129,14 @@ class ChangePasswordSerializer(serializers.Serializer):
             user.save(update_fields=["password"])
             revoke_all_refresh_tokens(user)
         return user
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Langkah 1 reset password: kirim tautan reset ke email (T3.5, US-07)."""
+
+    email = serializers.EmailField()
+
+    def save(self, **kwargs):
+        email = self.validated_data["email"]
+        for user in User.objects.filter(email__iexact=email, is_active=True):
+            send_reset_email(user)
