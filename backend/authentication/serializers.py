@@ -1,12 +1,23 @@
 from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User
 from users.serializers import UserSerializer
+
+
+def revoke_all_refresh_tokens(user):
+    """Mencabut semua refresh token milik user (keputusan 3.5)."""
+    for token in OutstandingToken.objects.filter(user=user):
+        BlacklistedToken.objects.get_or_create(token=token)
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -92,6 +103,8 @@ class ChangePasswordSerializer(serializers.Serializer):
 
     def save(self, **kwargs):
         user = self.context["request"].user
-        user.set_password(self.validated_data["new_password"])
-        user.save(update_fields=["password"])
+        with transaction.atomic():
+            user.set_password(self.validated_data["new_password"])
+            user.save(update_fields=["password"])
+            revoke_all_refresh_tokens(user)
         return user
