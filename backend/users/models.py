@@ -8,8 +8,8 @@ from .managers import UserManager
 
 class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
-        USER = 'user', 'User'
-        ADMIN = 'admin', 'Admin'
+        USER = "user", "User"
+        ADMIN = "admin", "Admin"
 
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=150)
@@ -23,11 +23,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS: ClassVar[list[str]] = ['name']
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS: ClassVar[list[str]] = ["name"]
 
     class Meta:
-        db_table = 'users'
+        db_table = "users"
 
     def __str__(self):
         return self.email

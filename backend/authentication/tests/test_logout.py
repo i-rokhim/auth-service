@@ -6,48 +6,48 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User
 
-PASSWORD = 'Kata-Sandi-Kuat-2026'
-REJECTED = ['Token tidak valid atau sudah dicabut.']
+PASSWORD = "Kata-Sandi-Kuat-2026"
+REJECTED = ["Token tidak valid atau sudah dicabut."]
 
 
 class LogoutTests(APITestCase):
     def setUp(self):
-        self.url = reverse('logout')
+        self.url = reverse("logout")
         self.user = User.objects.create_user(
-            email='budi@example.com',
+            email="budi@example.com",
             password=PASSWORD,
-            name='Budi',
+            name="Budi",
         )
         self.other_user = User.objects.create_user(
-            email='ani@example.com',
+            email="ani@example.com",
             password=PASSWORD,
-            name='Ani',
+            name="Ani",
         )
         self.refresh = RefreshToken.for_user(self.user)
         self.client.credentials(
-            HTTP_AUTHORIZATION=f'Bearer {self.refresh.access_token}',
+            HTTP_AUTHORIZATION=f"Bearer {self.refresh.access_token}",
         )
 
     def post_logout(self, token):
-        return self.client.post(self.url, {'refresh': str(token)}, format='json')
+        return self.client.post(self.url, {"refresh": str(token)}, format="json")
 
     def is_blacklisted(self, token):
-        return BlacklistedToken.objects.filter(token__jti=token['jti']).exists()
+        return BlacklistedToken.objects.filter(token__jti=token["jti"]).exists()
 
     def test_logout_blacklists_refresh_token(self):
         response = self.post_logout(self.refresh)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(response.content, b'')
+        self.assertEqual(response.content, b"")
         self.assertTrue(self.is_blacklisted(self.refresh))
 
     def test_revoked_token_cannot_be_refreshed(self):
         self.post_logout(self.refresh)
 
         response = self.client.post(
-            reverse('token-refresh'),
-            {'refresh': str(self.refresh)},
-            format='json',
+            reverse("token-refresh"),
+            {"refresh": str(self.refresh)},
+            format="json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -57,9 +57,9 @@ class LogoutTests(APITestCase):
 
         self.post_logout(self.refresh)
         response = self.client.post(
-            reverse('token-refresh'),
-            {'refresh': str(other_device)},
-            format='json',
+            reverse("token-refresh"),
+            {"refresh": str(other_device)},
+            format="json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -74,23 +74,23 @@ class LogoutTests(APITestCase):
         self.assertFalse(self.is_blacklisted(self.refresh))
 
     def test_invalid_access_token_is_rejected(self):
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer bukan-token-asli')
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer bukan-token-asli")
 
         response = self.post_logout(self.refresh)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_garbage_refresh_token_is_rejected(self):
-        response = self.post_logout('bukan-token-asli')
+        response = self.post_logout("bukan-token-asli")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, {'refresh': REJECTED})
+        self.assertEqual(response.data, {"refresh": REJECTED})
 
     def test_access_token_cannot_be_used_as_refresh(self):
         response = self.post_logout(self.refresh.access_token)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, {'refresh': REJECTED})
+        self.assertEqual(response.data, {"refresh": REJECTED})
 
     def test_other_users_refresh_token_is_rejected(self):
         others_token = RefreshToken.for_user(self.other_user)
@@ -98,7 +98,7 @@ class LogoutTests(APITestCase):
         response = self.post_logout(others_token)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, {'refresh': REJECTED})
+        self.assertEqual(response.data, {"refresh": REJECTED})
         self.assertFalse(self.is_blacklisted(others_token))
 
     def test_second_logout_with_same_token_is_rejected(self):
@@ -107,10 +107,10 @@ class LogoutTests(APITestCase):
 
         self.assertEqual(first.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(second.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(second.data, {'refresh': REJECTED})
+        self.assertEqual(second.data, {"refresh": REJECTED})
 
     def test_missing_refresh_field_is_rejected(self):
-        response = self.client.post(self.url, {}, format='json')
+        response = self.client.post(self.url, {}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('refresh', response.data)
+        self.assertIn("refresh", response.data)

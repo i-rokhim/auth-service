@@ -12,19 +12,21 @@ from users.serializers import UserSerializer
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
-        style={'input_type': 'password'},
+        style={"input_type": "password"},
     )
 
     class Meta:
         model = User
-        fields = ('email', 'name', 'password')
+        fields = ("email", "name", "password")
 
     def validate(self, attrs):
-        user = User(email=attrs['email'], name=attrs['name'])
+        user = User(email=attrs["email"], name=attrs["name"])
         try:
-            password_validation.validate_password(attrs['password'], user)
+            password_validation.validate_password(attrs["password"], user)
         except DjangoValidationError as error:
-            raise serializers.ValidationError({'password': list(error.messages)}) from error
+            raise serializers.ValidationError(
+                {"password": list(error.messages)}
+            ) from error
         return attrs
 
     def create(self, validated_data):
@@ -36,7 +38,7 @@ class LoginSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
-        data['user'] = UserSerializer(self.user).data
+        data["user"] = UserSerializer(self.user).data
         return data
 
 
@@ -46,12 +48,12 @@ class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
     def validate(self, attrs):
-        message = {'refresh': ['Token tidak valid atau sudah dicabut.']}
+        message = {"refresh": ["Token tidak valid atau sudah dicabut."]}
         try:
-            token = RefreshToken(attrs['refresh'])
+            token = RefreshToken(attrs["refresh"])
         except TokenError as error:
             raise serializers.ValidationError(message) from error
-        if str(token['user_id']) != str(self.context['request'].user.pk):
+        if str(token["user_id"]) != str(self.context["request"].user.pk):
             raise serializers.ValidationError(message)
         self.token = token
         return attrs

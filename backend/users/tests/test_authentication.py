@@ -3,8 +3,8 @@ from django.test import TestCase
 
 from users.models import User
 
-EMAIL = 'budi@example.com'
-PASSWORD = 'Kata-Sandi-Kuat-2026'
+EMAIL = "budi@example.com"
+PASSWORD = "Kata-Sandi-Kuat-2026"
 
 
 class AuthenticateTests(TestCase):
@@ -13,7 +13,7 @@ class AuthenticateTests(TestCase):
         cls.user = User.objects.create_user(
             email=EMAIL,
             password=PASSWORD,
-            name='Budi',
+            name="Budi",
         )
 
     def test_correct_email_and_password_is_accepted(self):
@@ -22,13 +22,13 @@ class AuthenticateTests(TestCase):
         self.assertEqual(user, self.user)
 
     def test_wrong_password_is_rejected(self):
-        user = authenticate(email=EMAIL, password='salah')
+        user = authenticate(email=EMAIL, password="salah")
 
         self.assertIsNone(user)
 
     def test_unknown_email_is_rejected(self):
         user = authenticate(
-            email='tidak-ada@example.com',
+            email="tidak-ada@example.com",
             password=PASSWORD,
         )
 
