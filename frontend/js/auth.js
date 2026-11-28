@@ -20,6 +20,11 @@ const Auth = (() => {
     localStorage.setItem(ACCESS_KEY, access);
   }
 
+    // Dipakai setelah profil diubah, supaya data user yang tersimpan ikut diperbarui.
+  function setUser(user) {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  }
+
   function getAccess() {
     return localStorage.getItem(ACCESS_KEY);
   }
@@ -83,6 +88,7 @@ const Auth = (() => {
   return {
     saveSession,
     setAccess,
+    setUser,
     getAccess,
     getRefresh,
     getUser,

@@ -9,6 +9,7 @@
 <body>
   <main>
     <h1>Profil saya</h1>
+    <p id="notice" role="status"></p>
 
     <dl>
       <dt>Email</dt>
@@ -19,26 +20,76 @@
       <dd id="user-name"></dd>
     </dl>
 
-    <button type="button" id="logout-button">Keluar</button>
+    <form id="name-form">
+      <label for="name">Ubah nama</label>
+      <input id="name" name="name" type="text" maxlength="150"
+             autocomplete="name" required>
+
+      <p id="form-error" role="alert"></p>
+      <button type="submit">Simpan nama</button>
+    </form>
+
+    <p><a href="change-password.html">Ganti password</a></p>
+
+    <p><button type="button" id="logout-button">Keluar</button></p>
   </main>
 
   <script src="js/auth.js"></script>
   <script src="js/api.js"></script>
   <script>
-    // Halaman sementara: data diambil dari respons login yang tersimpan di
-    // browser. Nanti diganti dengan GET /auth/profile/ (Sprint 3).
-    if (Auth.requireLogin()) {
-      const user = Auth.getUser();
-      if (!user) {
-        // Data sesi rusak atau hilang: mulai ulang dari halaman Masuk.
-        Auth.clear();
-        Auth.redirectToLogin();
+    const nameForm = document.getElementById('name-form');
+    const nameInput = document.getElementById('name');
+    const formError = document.getElementById('form-error');
+    const notice = document.getElementById('notice');
+    const saveButton = nameForm.querySelector('button');
+
+    // Semua data pengguna dipasang lewat textContent dan value, bukan innerHTML.
+    function showProfile(user) {
+      document.getElementById('user-email').textContent = user.email;
+      document.getElementById('user-role').textContent = user.role;
+      document.getElementById('user-name').textContent = user.name;
+      nameInput.value = user.name;
+    }
+
+    async function loadProfile() {
+      const result = await Api.request('/auth/profile/');
+      if (result.ok) {
+        Auth.setUser(result.data);
+        showProfile(result.data);
       } else {
-        document.getElementById('user-email').textContent = user.email;
-        document.getElementById('user-role').textContent = user.role;
-        document.getElementById('user-name').textContent = user.name;
+        formError.textContent = Api.firstMessage(result.data);
       }
     }
+
+    if (Auth.requireLogin()) {
+      // Data dari login tampil lebih dulu, lalu diganti data terbaru dari server.
+      const saved = Auth.getUser();
+      if (saved) {
+        showProfile(saved);
+      }
+      loadProfile();
+    }
+
+    nameForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      formError.textContent = '';
+      notice.textContent = '';
+      saveButton.disabled = true;
+
+      const result = await Api.request('/auth/profile/', {
+        method: 'PATCH',
+        body: { name: nameInput.value },
+      });
+
+      if (result.ok) {
+        Auth.setUser(result.data);
+        showProfile(result.data);
+        notice.textContent = 'Nama berhasil diperbarui.';
+      } else {
+        formError.textContent = Api.firstMessage(result.data);
+      }
+      saveButton.disabled = false;
+    });
 
     document.getElementById('logout-button').addEventListener('click', async (event) => {
       event.target.disabled = true;
