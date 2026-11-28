@@ -88,5 +88,14 @@ const Api = (() => {
     };
   }
 
-  return { request };
+  // Pesan pertama dari respons error server, ditampilkan apa adanya.
+  function firstMessage(data) {
+    if (data && data.detail) {
+      return data.detail;
+    }
+    const messages = data ? Object.values(data).flat() : [];
+    return messages.length ? String(messages[0]) : 'Terjadi kesalahan. Coba lagi.';
+  }
+
+  return { request, firstMessage };
 })();
