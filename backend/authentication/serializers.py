@@ -4,9 +4,10 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.mail import send_mail
 from django.db import transaction
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import serializers
+from rest_framework.exceptions import APIException
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.token_blacklist.models import (
@@ -17,6 +18,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User
 from users.serializers import UserSerializer
+
+
+class InvalidResetLink(APIException):
+    status_code = 400
+    default_detail = "Invalid or expired reset link."
+    default_code = "invalid_reset_link"
 
 
 def revoke_all_refresh_tokens(user):
@@ -140,3 +147,38 @@ class PasswordResetRequestSerializer(serializers.Serializer):
         email = self.validated_data["email"]
         for user in User.objects.filter(email__iexact=email, is_active=True):
             send_reset_email(user)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Langkah 2 reset password: atur password baru lewat tautan (T3.6, US-07)."""
+
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(
+        write_only=True,
+        style={"input_type": "password"},
+    )
+
+    def validate(self, attrs):
+        try:
+            pk = force_str(urlsafe_base64_decode(attrs["uid"]))
+            user = User.objects.get(pk=pk, is_active=True)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist) as error:
+            raise InvalidResetLink from error
+        if not default_token_generator.check_token(user, attrs["token"]):
+            raise InvalidResetLink
+        try:
+            password_validation.validate_password(attrs["new_password"], user)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError(
+                {"new_password": list(error.messages)}
+            ) from error
+        self.user = user
+        return attrs
+
+    def save(self, **kwargs):
+        with transaction.atomic():
+            self.user.set_password(self.validated_data["new_password"])
+            self.user.save(update_fields=["password"])
+            revoke_all_refresh_tokens(self.user)
+        return self.user
